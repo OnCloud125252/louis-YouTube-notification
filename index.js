@@ -1,25 +1,32 @@
-import express from "express";
-import { readFileSync } from "fs";
+import dotenv from "dotenv";
 
-import Channel from "./_modules/Channel/index.js";
-import ReadableTime from "./_modules/ReadableTime/index.js";
+import { setUpListener } from "./_modules/Listener/index.js";
+import { notifier } from "./_modules/Listener/index.js";
 
 
-const ytapi = express();
-const status = express();
-const packageJSON = JSON.parse(readFileSync("./package.json"));
+dotenv.config();
 
-const host = "0.0.0.0";
-const statusPort = "9000";
+setUpListener(notifier.listener());
 
-const notifier = new Channel("UCipcFficbraNNUjqYw4ugWQ");
-notifier.newVideo();
-ytapi.use("/getNotified", notifier.listener());
-
-status.get("/ping", (_, res) => {
-    res.json({ message: `Service is up : ${ReadableTime(Math.round(performance.now()))["string"]} | API v${packageJSON.version}` });
+notifier.on("notified", data => {
+    console.log(data);
 });
 
-status.listen(statusPort, host, () => {
-    console.log(`Status displayed on : https://youtube-notification-bot.alexliao.repl.co:9000/ping`);
-});
+
+
+// {
+// video: {
+// id: '8hnz7aUiCUg',
+// title: 'Test',
+// link: 'https://www.youtube.com/watch?v=8hnz7aUiCUg'
+// },
+// channel: {
+// id: 'UCipcFficbraNNUjqYw4ugWQ',
+// name: 'Alex Liao',
+// link: 'https://www.youtube.com/channel/UCipcFficbraNNUjqYw4ugWQ'
+// },
+// published: 2023-03-05T10:21:29.000Z,
+// updated: 2023-03-05T10:21:39.930Z
+// }
+
+// curl "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=UCipcFficbraNNUjqYw4ugWQ&key=AIzaSyBHGW536inrEhk5We9CBim9ccusm1GUJok"
