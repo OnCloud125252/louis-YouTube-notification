@@ -1,32 +1,42 @@
 import dotenv from "dotenv";
+import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 
 import { setUpListener } from "./_modules/Listener/index.js";
 import { notifier } from "./_modules/Listener/index.js";
+import { Video } from "./_modules/Youtube/index.js";
 
 
 dotenv.config();
-
-setUpListener(notifier.listener());
-
-notifier.on("notified", data => {
-    console.log(data);
+const botClient = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+    partials: [Partials.Channel]
 });
 
+setUpListener(notifier.listener());
+// notifier.unsubscribe("UCipcFficbraNNUjqYw4ugWQ");
+notifier.on("notified", async data => {
+    const isLive = await new Video(data.video.id).isLive();
+    console.log("Channel Name : " + data.channel.name);
+    console.log("Channel Link : " + data.channel.link);
+    console.log("Video Name   : " + data.video.name);
+    console.log("Video Link   : " + data.video.link);
+    console.log("Status       : " + (isLive ? "Live Stream" : "Video"));
 
+    const notifyMessage = isLive ? (
+        `${data.channel.name} 開台啦\n${data.video.link}`
+    ) : (
+        `${data.channel.name} 上片啦\n${data.video.link}`
+    );
 
-// {
-// video: {
-// id: '8hnz7aUiCUg',
-// title: 'Test',
-// link: 'https://www.youtube.com/watch?v=8hnz7aUiCUg'
-// },
-// channel: {
-// id: 'UCipcFficbraNNUjqYw4ugWQ',
-// name: 'Alex Liao',
-// link: 'https://www.youtube.com/channel/UCipcFficbraNNUjqYw4ugWQ'
-// },
-// published: 2023-03-05T10:21:29.000Z,
-// updated: 2023-03-05T10:21:39.930Z
-// }
+    botClient.channels.cache.get("1082546196037505045").send(notifyMessage);
+});
 
-// curl "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=UCipcFficbraNNUjqYw4ugWQ&key=AIzaSyBHGW536inrEhk5We9CBim9ccusm1GUJok"
+botClient.once(Events.ClientReady, c => {
+    console.log(`Logged in as ${c.user.tag}`);
+});
+
+botClient.login(process.env.discordbot_token);
